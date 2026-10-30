@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <title>ОГЭ Тренажер</title>
+
+  <link rel="manifest" href="manifest.json" />
+
+  <meta name="theme-color" content="#1e293b" />
+
+  <style>
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    body { background: #0f172a; color: #f8fafc; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+    header { background: #1e293b; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+
+    header h1 { font-size: 17px; font-weight: 600; }
+
+    .action-bar { display: flex; gap: 8px; }
+
+    .btn-small { background: #334155; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+
+    .btn-small:hover { background: #475569; }
+
+    #chat-box { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    .msg { max-width: 82%; padding: 12px 14px; border-radius: 16px; line-height: 1.45; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; }
+
+    .msg.bot { background: #1e293b; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #334155; }
+
+    .msg.user { background: #2563eb; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+
+    #continue-bar { display: none; padding: 10px 16px; background: #1e293b; border-top: 1px solid #334155; text-align: center; }
+
+    #continue-bar button { width: 100%; padding: 12px; background: #16a34a; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+    footer { background: #1e293b; padding: 10px 12px; display: flex; gap: 8px; border-top: 1px solid #334155; }
+
+    #user-input { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 16px; outline: none; }
+
+    #send-btn { background: #2563eb; color: #fff; border: none; padding: 0 18px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+    /* Login Modal */
+
+    #login-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.95); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+
+    .login-card { background: #1e293b; padding: 24px; border-radius: 16px; width: 100%; max-width: 360px; border: 1px solid #334155; text-align: center; }
+
+    .login-card h2 { margin-bottom: 12px; font-size: 20px; }
+
+    .login-card input { width: 100%; padding: 12px; margin: 12px 0; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 16px; }
+
+    .login-card button { width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+  </style>
+
+</head>
+
+<body>
+
+
+
+  <div id="login-overlay">
+
+    <div class="login-card">
+
+      <h2>🎓 ОГЭ Тренажер</h2>
+
+      <p style="color:#94a3b8; font-size:14px;">Введи свое имя или никнейм для сохранения прогресса:</p>
+
+      <input type="text" id="student-id-input" placeholder="Например: Dinja_01" />
+
+      <button onclick="saveStudentId()">Войти</button>
+
+    </div>
+
+  </div>
+
+
+
+  <header>
+
+    <h1 id="header-title">🎓 ОГЭ Бот</h1>
+
+    <div class="action-bar">
+
+      <button class="btn-small" onclick="sendAction('start')">🚀 Старт</button>
+
+      <button class="btn-small" onclick="sendAction('pause')">⏸ Пауза</button>
+
+    </div>
+
+  </header>
+
+
+
+  <div id="chat-box"></div>
+
+
+
+  <div id="continue-bar">
+
+    <button onclick="sendAction('continue')">▶️ Продолжить тренировку</button>
+
+  </div>
+
+
+
+  <footer>
+
+    <input type="text" id="user-input" placeholder="Введи ответ..." autocomplete="off" />
+
+    <button id="send-btn" onclick="sendText()">➤</button>
+
+  </footer>
+
+
+
+  <script>
+
+    // PASTE YOUR APPS SCRIPT WEB APP URL BELOW:
+
+    const API_URL = "PASTE_YOUR_WEBAPP_URL_HERE";
+
+
+
+    let studentId = localStorage.getItem("oge_student_id") || "";
+
+    const chatBox = document.getElementById("chat-box");
+
+    const inputField = document.getElementById("user-input");
+
+    const continueBar = document.getElementById("continue-bar");
+
+
+
+    if (studentId) {
+
+      document.getElementById("login-overlay").style.display = "none";
+
+      document.getElementById("header-title").innerText = "🎓 " + studentId;
+
+      sendAction("check");
+
+    }
+
+
+
+    function saveStudentId() {
+
+      const val = document.getElementById("student-id-input").value.trim();
+
+      if (!val) return;
+
+      studentId = val;
+
+      localStorage.setItem("oge_student_id", studentId);
+
+      document.getElementById("login-overlay").style.display = "none";
+
+      document.getElementById("header-title").innerText = "🎓 " + studentId;
+
+      sendAction("check");
+
+    }
+
+
+
+    function appendMessage(htmlContent, sender) {
+
+      const div = document.createElement("div");
+
+      div.className = "msg " + sender;
+
+      if (sender === "bot") {
+
+        div.innerHTML = htmlContent;
+
+      } else {
+
+        div.textContent = htmlContent;
+
+      }
+
+      chatBox.appendChild(div);
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+    }
+
+
+
+    async function callBackend(payload) {
+
+      const typingDiv = document.createElement("div");
+
+      typingDiv.className = "msg bot";
+
+      typingDiv.textContent = "⏳...";
+
+      chatBox.appendChild(typingDiv);
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+
+
+      try {
+
+        // Sending as text/plain avoids CORS preflight issues with Google Apps Script
+
+        const response = await fetch(API_URL, {
+
+          method: "POST",
+
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+
+          body: JSON.stringify(payload)
+
+        });
+
+        const data = await response.json();
+
+        chatBox.removeChild(typingDiv);
+
+
+
+        if (data.messages && data.messages.length > 0) {
+
+          data.messages.forEach(m => appendMessage(m, "bot"));
+
+        }
+
+        continueBar.style.display = data.isPaused ? "block" : "none";
+
+      } catch (err) {
+
+        chatBox.removeChild(typingDiv);
+
+        appendMessage("⚠️ Ошибка соединения с сервером. Проверь интернет.", "bot");
+
+      }
+
+    }
+
+
+
+    function sendText() {
+
+      const text = inputField.value.trim();
+
+      if (!text) return;
+
+      inputField.value = "";
+
+      appendMessage(text, "user");
+
+      callBackend({ student_id: studentId, action: "message", text: text });
+
+    }
+
+
+
+    function sendAction(actionType) {
+
+      if (actionType === "start") appendMessage("🚀 Начать тренировку", "user");
+
+      if (actionType === "pause") appendMessage("⏸ Пауза", "user");
+
+      if (actionType === "continue") appendMessage("▶️ Продолжить", "user");
+
+      callBackend({ student_id: studentId, action: actionType, text: "" });
+
+    }
+
+
+
+    inputField.addEventListener("keydown", function(e) {
+
+      if (e.key === "Enter") sendText();
+
+    });
+
+  </script>
+
+</body>
+
+</html>
